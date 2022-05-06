@@ -9,11 +9,12 @@
     "data_loader": {
         "type": "TinyImageNetDataloader",
         "args":{
-            "data_dir": "/kaggle/input/tinyimagenet/tinyImageNet/",
+            "data_dir": "/kaggle/input/tinyimagenetnopickle/tinyImageNetNoPickle/",
             "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 2
+            "num_workers": 2,
+	    "different_trsfm": false
         }
     },
     "optimizer": {
