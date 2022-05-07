@@ -77,12 +77,13 @@ class BaseDataLoader(DataLoader):
             split = StratifiedShuffleSplit(n_splits=1, test_size=split, random_state=42)
             for train_index, valid_index in split.split(np.array(self.dataset.data), np.array(self.dataset.targets)):
                 train_sampler, valid_sampler = SubsetRandomSampler(train_index), SubsetRandomSampler(valid_index)
+                self.shuffle = False
+                self.n_samples = len(train_index)
+                return train_sampler, valid_sampler
+        else:
+            self.shuffle = False
+            self.n_samples = len(self.dataset.samples[0])
 
-        self.shuffle = False
-        self.n_samples = len(train_index)
-
-        if not assigned_val:
-            return train_sampler, valid_sampler
 
     def split_validation(self):
         if self.valid_sampler is None:

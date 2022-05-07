@@ -46,7 +46,7 @@ class TinyImageNetDataloader(BaseDataLoader):
                                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])}
         self.data_dir = data_dir
         self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split)
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, assign_val_sample, self.samples)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
 
 class TinyImageNetDatasets(Dataset):
