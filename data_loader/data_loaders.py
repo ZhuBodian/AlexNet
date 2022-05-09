@@ -35,18 +35,21 @@ class TinyImageNetDataloader(BaseDataLoader):
 
     def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,
                  assign_val_sample=False):
-        # 这里首先令训练集与验证集具有相同的trsfm
         trsfm = {
             "train": transforms.Compose([transforms.Resize([224, 224]),
-                                         transforms.RandomHorizontalFlip(),
+                                         transforms.RandAugment(),
                                          transforms.ToTensor(),
                                          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
-            "val": transforms.Compose([transforms.Resize([224,224]),
+            "val": transforms.Compose([transforms.Resize([224, 224]),
                                        transforms.ToTensor(),
-                                       transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])}
+                                       transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
+            "test": transforms.Compose([transforms.Resize([224, 224]),
+                                        transforms.ToTensor()])
+        }
         self.data_dir = data_dir
         self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split)
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, assigned_val=assign_val_sample, samplers=self.dataset.samples)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers,
+                         assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
 
 class TinyImageNetDatasets(Dataset):
@@ -73,15 +76,48 @@ class TinyImageNetDatasets(Dataset):
         csv_image_label_list.sort()  # 注意list的sort函数为就地sort
 
         # 生成self.target
-        for id, image_label in enumerate(csv_image_label_list):
-            csv_data.replace(image_label, id, inplace=True)
-        self.targets = torch.from_numpy(np.array(csv_data['label'])).long()[:300]
+        for idx, image_label in enumerate(csv_image_label_list):
+            csv_data.replace(image_label, idx, inplace=True)
+        self.targets = torch.from_numpy(np.array(csv_data['label'])).long()
 
-        self.samples = self.cal_samples(split, self.targets)
+        if train:
+            self.samples = self.cal_samples(split, self.targets)
+            csv_train_image_name_list = csv_data['filename'][self.samples[0].indices]
+            csv_valid_image_name_list = csv_data['filename'][self.samples[1].indices]
+            data = torch.empty((len(csv_train_image_name_list) + len(csv_valid_image_name_list), 3, 224, 224))
 
-        """之后的任务：探究不同数据增强对图片的影响，对训练结果的影响，并对pytorch-template进行修改，添加事先分隔号训练集、验证集的功能"""
+            for idx, image_name in enumerate(csv_train_image_name_list):
+                image_path = os.path.join(os.getcwd(), image_dir, image_name)
+                # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
+                image = Image.open(image_path).convert('RGB')
+                image = transform['train'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
+
+                data[self.samples[0].indices[idx]] = image
+
+            for idx, image_name in enumerate(csv_valid_image_name_list):
+                image_path = os.path.join(os.getcwd(), image_dir, image_name)
+                # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
+                image = Image.open(image_path).convert('RGB')
+                image = transform['val'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
+
+                data[self.samples[1].indices[idx]] = image
+
+        else:
+            data = torch.empty((len(csv_image_name_list), 3, 224, 224))
+            for idx, image_name in enumerate(csv_image_name_list):
+                image_path = os.path.join(os.getcwd(), image_dir, image_name)
+                # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
+                image = Image.open(image_path).convert('RGB')
+                image = transform['test'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
+
+                data[idx] = image
+
+        self.data = data
+
+        """
+        #之后的任务：探究不同数据增强对图片的影响，对训练结果的影响，并对pytorch-template进行修改，添加事先分隔号训练集、验证集的功能
         data_list = []
-        for idx, image_name in enumerate(csv_image_name_list[:300]):
+        for idx, image_name in enumerate(csv_image_name_list):
             image_path = os.path.join(os.getcwd(), image_dir, image_name)
             # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
             image = Image.open(image_path).convert('RGB')
@@ -100,6 +136,7 @@ class TinyImageNetDatasets(Dataset):
 
         self.data = torch.stack(data_list)
         del data_list
+        """
 
         num_label2text_label = dict([(idx, text) for idx, text in enumerate(csv_image_label_list)])
         # util.write_json(num_label2text_label, os.path.join(path, 'num_label2text_label.json'))
