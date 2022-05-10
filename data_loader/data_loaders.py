@@ -17,15 +17,15 @@ class MnistDataLoader(BaseDataLoader):
     MNIST data loading demo using BaseDataLoader
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,assign_val_sample=False):
         trsfm = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
         self.data_dir = data_dir
         self.dataset = datasets.MNIST(self.data_dir, train=training, download=True, transform=trsfm)
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
-        a = 1
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, assign_val_sample)
+
 
 
 class TinyImageNetDataloader(BaseDataLoader):
@@ -46,14 +46,16 @@ class TinyImageNetDataloader(BaseDataLoader):
             "test": transforms.Compose([transforms.Resize([224, 224]),
                                         transforms.ToTensor()])
         }
+        nums = 2  # 每张图片增加的样本数
         self.data_dir = data_dir
-        self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split)
+        self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split,
+                                            nums=nums)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers,
                          assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
 
 class TinyImageNetDatasets(Dataset):
-    def __init__(self, path, train, transform, split):
+    def __init__(self, path, train, transform, split, nums):
         super().__init__()
 
         image_dir = os.path.join(path, "images")
@@ -84,15 +86,33 @@ class TinyImageNetDatasets(Dataset):
             self.samples = self.cal_samples(split, self.targets)
             csv_train_image_name_list = csv_data['filename'][self.samples[0].indices]
             csv_valid_image_name_list = csv_data['filename'][self.samples[1].indices]
-            data = torch.empty((len(csv_train_image_name_list) + len(csv_valid_image_name_list), 3, 224, 224))
+            train_val_size = len(csv_train_image_name_list) + len(csv_valid_image_name_list)
+            train_size = len(csv_train_image_name_list)
+            data = torch.empty((train_val_size, 3, 224, 224))
+
+            additional_data = torch.empty((nums * train_size, 3, 224, 224))  # 用以记录数据增强的额外tenor
+            additional_target = torch.empty((nums * train_size))  # 用以记录数据增强的额外tensor的标签
+            addidional_idx = 0  # 当前的额外标签
 
             for idx, image_name in enumerate(csv_train_image_name_list):
                 image_path = os.path.join(os.getcwd(), image_dir, image_name)
                 # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
                 image = Image.open(image_path).convert('RGB')
-                image = transform['train'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
+                temp = transform['train'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
+                data[self.samples[0].indices[idx]] = temp
 
-                data[self.samples[0].indices[idx]] = image
+                # 添加额外图片
+                for _ in range(nums):
+                    temp = transform['train'](image)  # 由于采用了transforms.RandAugment()，本来就有随机性
+                    additional_data[addidional_idx, :] = temp
+                    additional_target[addidional_idx] = self.targets[self.samples[0].indices[idx]]
+                    addidional_idx = addidional_idx + 1
+
+            # 拼接额外图片
+            temp = np.array([i + train_size for i in range(addidional_idx)])
+            self.samples[0].indices = np.hstack((self.samples[0].indices, temp))
+            data = torch.cat([data, additional_data], dim=0)
+            self.targets = torch.cat([self.targets, additional_target], dim=0).long()
 
             for idx, image_name in enumerate(csv_valid_image_name_list):
                 image_path = os.path.join(os.getcwd(), image_dir, image_name)
