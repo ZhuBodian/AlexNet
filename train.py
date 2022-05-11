@@ -1,5 +1,7 @@
 import argparse
 import collections
+import os
+
 import torch
 import numpy as np
 import data_loader.data_loaders as module_data
@@ -9,7 +11,8 @@ import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
-
+from utils import send_email
+from utils import global_var
 
 # fix random seeds for reproducibility
 SEED = 123
@@ -19,6 +22,9 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 def main(config):
+    global_var._init()
+    global_var.set_value('email_log', send_email.Mylog(header='autodl', subject='AlexNet'))
+
     # config为parse_config中的ConfigParser类，且注意config.init_obj第二个变量均为某个模块，且变量在__name__ == '__main__'中的special variables中
     # 第一个变量为str类型，详细查看config.json文件
     logger = config.get_logger('train')  # 创建指定名字的日志文件，返回的为标准logging类
@@ -30,6 +36,7 @@ def main(config):
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     logger.info(model)  # logging.info('输出信息')，而类model的输出信息为可训练参数
+    global_var.get_value('email_log').add_log(model.__str__())
 
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -55,6 +62,8 @@ def main(config):
                       lr_scheduler=lr_scheduler)
 
     trainer.train()
+    global_var.get_value('email_log').send_mail()
+    os.system('shutdown')
 
 
 if __name__ == '__main__':

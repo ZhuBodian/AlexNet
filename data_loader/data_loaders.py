@@ -17,7 +17,8 @@ class MnistDataLoader(BaseDataLoader):
     MNIST data loading demo using BaseDataLoader
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,assign_val_sample=False):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,
+                 assign_val_sample=False, augment_pics=0):
         trsfm = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
@@ -34,7 +35,7 @@ class TinyImageNetDataloader(BaseDataLoader):
     """
 
     def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,
-                 assign_val_sample=False):
+                 assign_val_sample=False, augment_pics=0):
         trsfm = {
             "train": transforms.Compose([transforms.Resize([224, 224]),
                                          transforms.RandAugment(),
@@ -46,10 +47,9 @@ class TinyImageNetDataloader(BaseDataLoader):
             "test": transforms.Compose([transforms.Resize([224, 224]),
                                         transforms.ToTensor()])
         }
-        nums = 2  # 每张图片增加的样本数
         self.data_dir = data_dir
         self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split,
-                                            nums=nums)
+                                            nums=augment_pics)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers,
                          assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
@@ -90,10 +90,11 @@ class TinyImageNetDatasets(Dataset):
             train_size = len(csv_train_image_name_list)
             data = torch.empty((train_val_size, 3, 224, 224))
 
-            additional_data = torch.empty((nums * train_size, 3, 224, 224))  # 用以记录数据增强的额外tenor
-            additional_target = torch.empty((nums * train_size))  # 用以记录数据增强的额外tensor的标签
+            additional_data = torch.empty((nums*train_size, 3, 224, 224))  # 用以记录数据增强的额外tenor
+            additional_target = torch.empty((nums*train_size))  # 用以记录数据增强的额外tensor的标签
             addidional_idx = 0  # 当前的额外标签
 
+            # 处理训练集
             for idx, image_name in enumerate(csv_train_image_name_list):
                 image_path = os.path.join(os.getcwd(), image_dir, image_name)
                 # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
@@ -108,12 +109,16 @@ class TinyImageNetDatasets(Dataset):
                     additional_target[addidional_idx] = self.targets[self.samples[0].indices[idx]]
                     addidional_idx = addidional_idx + 1
 
+                if (idx + 1) % 100 == 0:
+                    print(f'There are {train_val_size} images. Processing image {idx + 1}')
+
             # 拼接额外图片
-            temp = np.array([i + train_size for i in range(addidional_idx)])
+            temp = np.array([i + train_size for i in range(addidional_idx)], dtype=np.int64)  # 索引只能为int，默认是float
             self.samples[0].indices = np.hstack((self.samples[0].indices, temp))
             data = torch.cat([data, additional_data], dim=0)
             self.targets = torch.cat([self.targets, additional_target], dim=0).long()
 
+            # 处理验证集
             for idx, image_name in enumerate(csv_valid_image_name_list):
                 image_path = os.path.join(os.getcwd(), image_dir, image_name)
                 # 读出来的图像是RGBA四通道的，A通道为透明通道，该通道值对深度学习模型训练来说暂时用不到，因此使用convert(‘RGB’)进行通道转换
@@ -121,6 +126,9 @@ class TinyImageNetDatasets(Dataset):
                 image = transform['val'](image)  # .unsqueeze(0)增加维度（0表示，在第一个位置增加维度）
 
                 data[self.samples[1].indices[idx]] = image
+
+                if (train_size + idx + 1) % 100 == 0:
+                    print(f'There are{train_val_size} images. Processing image {train_size + idx + 1}')
 
         else:
             data = torch.empty((len(csv_image_name_list), 3, 224, 224))

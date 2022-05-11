@@ -9,12 +9,13 @@
     "data_loader": {
         "type": "TinyImageNetDataloader",
         "args":{
-            "data_dir": "/kaggle/input/tinyimagenetnopickle/tinyImageNetNoPickle/",
+            "data_dir": "../autodl-tmp/data/tinyImageNetNoPickle/",
             "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
-	        "assign_val_sample": true
+	        "assign_val_sample": true,
+            "augment_pics": 8
         }
     },
     "optimizer": {
@@ -37,14 +38,14 @@
         }
     },
     "trainer": {
-        "epochs": 200,
+        "epochs": 100,
 
-        "save_dir": "/kaggle/working/saved/",
-        "save_period": 1,
+        "save_dir": "../autodl-tmp/saved/",
+        "save_period": 10,
         "verbosity": 2,
         
         "monitor": "min val_loss",
-        "early_stop": 20,
+        "early_stop": 10,
 
         "tensorboard": true
     }
