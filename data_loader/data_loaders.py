@@ -48,19 +48,17 @@ class TinyImageNetDataloader(BaseDataLoader):
         }
         self.data_dir = data_dir
 
-        # 一般第一次运行都是true（从图像中读取数据并保存为pickle），第二次均为false（直接从pickle中读数，省去预处理时间，且不用再存）
-        run_from_image = True
-        save_tensor = True
-        assert save_tensor == run_from_image, 'save_tensor and run_from_image should have same bool value'
+        # 一般第一次运行是true（从图像中读取数据并保存为pickle），第二次为false（直接从pickle中读数，省去预处理时间，且不用再存）
+        run_from_image_and_save_tensor = False
 
         self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split,
-                                            nums=augment_pics, save_tensor=save_tensor, run_from_pic=run_from_image)
+                                            nums=augment_pics, flag=run_from_image_and_save_tensor)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers,
                          assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
 
 class TinyImageNetDatasets(Dataset):
-    def __init__(self, path, train, transform, split, nums, save_tensor, run_from_pic):
+    def __init__(self, path, train, transform, split, nums, flag):
         super().__init__()
 
         image_dir = os.path.join(path, "images")
@@ -72,13 +70,12 @@ class TinyImageNetDatasets(Dataset):
         self.root = path
 
         csv_mode = 'train' if train else 'test'
-        if run_from_pic:
+        if flag:
             self.run_from_image(train, path, split, nums, image_dir, transform)
-            if save_tensor:
-                utils.save_as_pickle(os.path.join(path, csv_mode + '_data.pickle'), self.data)
-                utils.save_as_pickle(os.path.join(path, csv_mode + '_targets.pickle'), self.targets)
-                if train:  # 测试集没有这个变量
-                    utils.save_as_pickle(os.path.join(path, 'samples.pickle'), self.samples)
+            utils.save_as_pickle(os.path.join(path, csv_mode + '_data.pickle'), self.data)
+            utils.save_as_pickle(os.path.join(path, csv_mode + '_targets.pickle'), self.targets)
+            if train:  # 测试集没有这个变量
+                utils.save_as_pickle(os.path.join(path, 'samples.pickle'), self.samples)
         else:
             self.data = utils.load_from_pickle(os.path.join(path, csv_mode + '_data.pickle'))
             self.targets = utils.load_from_pickle(os.path.join(path, csv_mode + '_targets.pickle'))

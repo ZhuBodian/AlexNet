@@ -38,7 +38,7 @@
         }
     },
     "trainer": {
-        "epochs": 2,
+        "epochs": 100,
 
         "save_dir": "../autodl-tmp/saved/",
         "save_period": null,
