@@ -1,9 +1,9 @@
 {
-    "name": "AlexNet",
+    "name": "AlexModelChange",
     "n_gpu": 1,
 
     "arch": {
-        "type": "AlexModel",
+        "type": "AlexModelChange",
         "args": {}
     },
     "data_loader": {
@@ -13,9 +13,9 @@
             "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 2,
+            "num_workers": 12,
 	        "assign_val_sample": true,
-            "augment_pics": 8
+            "augment_pics": 2
         }
     },
     "optimizer": {
@@ -41,12 +41,13 @@
         "epochs": 100,
 
         "save_dir": "../autodl-tmp/saved/",
-        "save_period": 10,
+        "save_period": null,
         "verbosity": 2,
         
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true
+        "tensorboard": true，
+        "save_non_optimum": false
     }
 }

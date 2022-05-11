@@ -1,9 +1,9 @@
 {
-    "name": "AlexNet",
+    "name": "AlexNetChange",
     "n_gpu": 1,
 
     "arch": {
-        "type": "AlexModel",
+        "type": "AlexModelChange",
         "args": {}
     },
     "data_loader": {
@@ -41,12 +41,13 @@
         "epochs": 100,
 
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": null,
         "verbosity": 2,
         
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true
+        "tensorboard": true,
+        "save_non_optimum": false
     }
 }

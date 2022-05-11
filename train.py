@@ -23,7 +23,7 @@ np.random.seed(SEED)
 
 def main(config):
     global_var._init()
-    global_var.set_value('email_log', send_email.Mylog(header='autodl', subject='AlexNet'))
+    global_var.set_value('email_log', send_email.Mylog(header='autodl', subject='AlexNetChange'))
 
     # config为parse_config中的ConfigParser类，且注意config.init_obj第二个变量均为某个模块，且变量在__name__ == '__main__'中的special variables中
     # 第一个变量为str类型，详细查看config.json文件
