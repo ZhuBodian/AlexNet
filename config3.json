@@ -10,7 +10,7 @@
         "type": "TinyImageNetDataloader",
         "args":{
             "data_dir": "../autodl-tmp/data/tinyImageNetNoPickle/",
-            "batch_size": 128,
+            "batch_size": 512,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 12,
@@ -38,7 +38,7 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 2,
 
         "save_dir": "../autodl-tmp/saved/",
         "save_period": null,
@@ -47,7 +47,7 @@
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true，
+        "tensorboard": true,
         "save_non_optimum": false
     }
 }

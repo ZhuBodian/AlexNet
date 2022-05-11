@@ -28,7 +28,6 @@ class MnistDataLoader(BaseDataLoader):
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, assign_val_sample)
 
 
-
 class TinyImageNetDataloader(BaseDataLoader):
     """
     MiniImageNet data loading demo using BaseDataLoader
@@ -48,14 +47,20 @@ class TinyImageNetDataloader(BaseDataLoader):
                                         transforms.ToTensor()])
         }
         self.data_dir = data_dir
+
+        # 一般第一次运行都是true（从图像中读取数据并保存为pickle），第二次均为false（直接从pickle中读数，省去预处理时间，且不用再存）
+        run_from_image = True
+        save_tensor = True
+        assert save_tensor == run_from_image, 'save_tensor and run_from_image should have same bool value'
+
         self.dataset = TinyImageNetDatasets(path=self.data_dir, train=training, transform=trsfm, split=validation_split,
-                                            nums=augment_pics)
+                                            nums=augment_pics, save_tensor=save_tensor, run_from_pic=run_from_image)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers,
                          assigned_val=assign_val_sample, samplers=self.dataset.samples)
 
 
 class TinyImageNetDatasets(Dataset):
-    def __init__(self, path, train, transform, split, nums):
+    def __init__(self, path, train, transform, split, nums, save_tensor, run_from_pic):
         super().__init__()
 
         image_dir = os.path.join(path, "images")
@@ -66,6 +71,21 @@ class TinyImageNetDatasets(Dataset):
         self.transform = transform
         self.root = path
 
+        csv_mode = 'train' if train else 'test'
+        if run_from_pic:
+            self.run_from_image(train, path, split, nums, image_dir, transform)
+            if save_tensor:
+                utils.save_as_pickle(os.path.join(path, csv_mode + '_data.pickle'), self.data)
+                utils.save_as_pickle(os.path.join(path, csv_mode + '_targets.pickle'), self.targets)
+                if train:  # 测试集没有这个变量
+                    utils.save_as_pickle(os.path.join(path, 'samples.pickle'), self.samples)
+        else:
+            self.data = utils.load_from_pickle(os.path.join(path, csv_mode + '_data.pickle'))
+            self.targets = utils.load_from_pickle(os.path.join(path, csv_mode + '_targets.pickle'))
+            if train:  # 测试集没有这个变量
+                self.samples = utils.load_from_pickle(os.path.join(path, 'samples.pickle'))
+
+    def run_from_image(self, train, path, split, nums, image_dir, transform):
         # 根据布尔值train，来确定是生成训练集数据（如果是训练集，那么肯定也要生成验证集），还是测试集数据
         csv_mode = 'train' if train else 'test'
         csv_name = csv_mode + '.csv'
@@ -90,8 +110,8 @@ class TinyImageNetDatasets(Dataset):
             train_size = len(csv_train_image_name_list)
             data = torch.empty((train_val_size, 3, 224, 224))
 
-            additional_data = torch.empty((nums*train_size, 3, 224, 224))  # 用以记录数据增强的额外tenor
-            additional_target = torch.empty((nums*train_size))  # 用以记录数据增强的额外tensor的标签
+            additional_data = torch.empty((nums * train_size, 3, 224, 224))  # 用以记录数据增强的额外tenor
+            additional_target = torch.empty((nums * train_size))  # 用以记录数据增强的额外tensor的标签
             addidional_idx = 0  # 当前的额外标签
 
             # 处理训练集
