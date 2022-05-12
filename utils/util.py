@@ -6,6 +6,7 @@ from itertools import repeat
 from collections import OrderedDict
 import pickle
 import os
+import time
 
 def ensure_dir(dirname):
     dirname = Path(dirname)
@@ -50,10 +51,11 @@ def save_as_pickle(name, data):
 
 
 def load_from_pickle(name):
-    assert os.path.exists(name), print('文件{name}不存在')
+    assert os.path.exists(name), print(f'文件{name}不存在')
     with open(name, "rb") as fh:
         data = pickle.load(fh)
     return data
+
 
 class MetricTracker:
     """用于跟踪tensorboard scalar中的数据的类"""
@@ -80,3 +82,14 @@ class MetricTracker:
     def result(self):
         # 返回计算跟踪的metric的平均值的字典形式
         return dict(self._data.average)
+
+
+class MyTimer:
+    def __init__(self, timer_reason):
+        self._start_timer = time.time()
+        self._stop_timer = time.time()
+        self.timer_reason = timer_reason
+
+    def stop(self):
+        self._stop_timer = time.time()
+        print(f'"{self.timer_reason}" cost time: {self._stop_timer - self._start_timer}s')

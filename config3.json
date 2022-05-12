@@ -10,10 +10,10 @@
         "type": "TinyImageNetDataloader",
         "args":{
             "data_dir": "../autodl-tmp/data/tinyImageNetNoPickle/",
-            "batch_size": 512,
+            "batch_size": 256,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 12,
+            "num_workers": 8,
 	        "assign_val_sample": true,
             "augment_pics": 2
         }

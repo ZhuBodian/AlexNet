@@ -1,8 +1,10 @@
 import torch
 from abc import abstractmethod
 from numpy import inf
+
+import utils
 from logger import TensorboardWriter
-from utils import global_var
+from utils import global_var, util
 
 class BaseTrainer:
     def __init__(self, model, criterion, metric_ftns, optimizer, config):
