@@ -43,7 +43,7 @@ class Trainer(BaseTrainer):
         self.model.train()  # 调用的是nn.model.train()设置为训练模式
         self.train_metrics.reset()  # 运行本次epoch之前，先把跟踪日志清0重置
         for batch_idx, (data, target) in enumerate(self.data_loader):
-            timer = utils.MyTimer(f'epoch {epoch} have total {len(self.data_loader)} batch. Batch {batch_idx + 1} GPU cal run')
+            # timer = utils.MyTimer(f'epoch {epoch} have total {len(self.data_loader)} batch. Batch {batch_idx + 1} GPU cal run')
 
             data, target = data.to(self.device), target.to(self.device)
 
@@ -53,9 +53,9 @@ class Trainer(BaseTrainer):
             loss.backward()
             self.optimizer.step()
 
-            timer.stop()
+            # timer.stop()
 
-            timer = utils.MyTimer(f'epoch {epoch} have total {len(self.data_loader)} batch. Batch {batch_idx + 1} CPU IO run')
+            # timer = utils.MyTimer(f'epoch {epoch} have total {len(self.data_loader)} batch. Batch {batch_idx + 1} CPU IO run')
 
             # 传入当前运行属于第几个step（第几个batch）
             # 当前的epoch次序*单个epoch的总step数+当前epoch的step次序
@@ -72,15 +72,16 @@ class Trainer(BaseTrainer):
             if batch_idx == self.len_epoch:
                 break
 
-            timer.stop()
+            # timer.stop()
         log = self.train_metrics.result()
 
-        timer = utils.MyTimer(f'epoch val run')
+        # timer = utils.MyTimer(f'epoch val run')
+
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
             log.update(**{'val_'+k : v for k, v in val_log.items()})
 
-        timer.stop()
+        # timer.stop()
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()

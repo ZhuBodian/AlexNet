@@ -10,7 +10,7 @@
         "type": "TinyImageNetDataloader",
         "args":{
             "data_dir": "../autodl-tmp/data/tinyImageNetNoPickle/",
-            "batch_size": 256,
+            "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 8,
@@ -23,7 +23,7 @@
         "args":{
             "lr": 0.001,
             "weight_decay": 0,
-            "amsgrad": true
+            "amsgrad": false
         }
     },
     "loss": "cross_entropyLoss",
@@ -38,7 +38,7 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 200,
 
         "save_dir": "../autodl-tmp/saved/",
         "save_period": null,

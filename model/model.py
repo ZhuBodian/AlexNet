@@ -69,9 +69,9 @@ class AlexModelChange(BaseModel):
             nn.MaxPool2d(kernel_size=3, stride=2),                  # output[128, 6, 6]
         )
         self.classifier = nn.Sequential(
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.6),
             nn.Linear(128 * 6 * 6, 1024), nn.ReLU(inplace=True),  # 李沐说2048太大，为什么是1024，参考https://www.zhihu.com/question/392308428
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.8),
             nn.Linear(1024, 512), nn.ReLU(inplace=True),
             nn.Linear(512, num_classes),
         )
